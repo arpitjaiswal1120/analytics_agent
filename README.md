@@ -5,7 +5,7 @@ It uses **LangGraph** for orchestration, **Gemini (Google Generative AI)** for r
 
 ---
 
-## ✨ What it does
+## 1. What it does
 
 Given a user query like _“plot daily sales trend for July”_, the agent:
 1. **Plans** the next step based on current state.
@@ -15,7 +15,7 @@ Given a user query like _“plot daily sales trend for July”_, the agent:
 
 ---
 
-## 🧩 Architecture
+## 2. Architecture
 
 The workflow is implemented with **LangGraph** and a shared state `AState`:
 
@@ -41,7 +41,7 @@ The graph is cyclic: after each node, control returns to **plan** until `END`.
 
 ---
 
-## 🗂️ Project structure
+## 3. Project structure
 
 ```
 .
@@ -55,7 +55,7 @@ The graph is cyclic: after each node, control returns to **plan** until `END`.
 
 ---
 
-## 🔑 Configuration
+## 4. Configuration
 
 Create a `.env` file in the project root with your Google API key:
 
@@ -67,28 +67,20 @@ GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY
 
 ---
 
-## 🧱 Data catalog (`data/schema.json`)
+## 5. Data Setup (`data/schema.json`)
 
 A simple JSON dictionary mapping **table keys** to metadata:
 
 ```json
 {
-  "sales_daily": {
-    "description": "Daily sales aggregated by date and region.",
-    "path": "data/sales_daily.csv",
-    "schema": {
-      "date": "YYYY-MM-DD",
-      "region": "string",
-      "sales": "number"
-    }
-  },
+  
   "inventory": {
     "description": "Ending inventory by SKU and date.",
     "path": "data/inventory.csv",
     "schema": {
-      "date": "YYYY-MM-DD",
-      "sku": "string",
-      "stock": "number"
+      "date": "invoice date",
+      "sku": "product sku code",
+      "stock": "# of units in 1000's"
     }
   }
 }
@@ -103,39 +95,19 @@ A simple JSON dictionary mapping **table keys** to metadata:
 
 ---
 
-## 📦 Installation
+## 6. Installation
 
 Create a virtual environment (any tool is fine). Two options are shown:
 
-### Option A) `pip` + `venv`
+### pip + venv
 ```bash
 python -m venv .venv
 source .venv/bin/activate             # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
-
-### Option B) `uv` (fast Python package manager)
-```bash
-uv venv .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
-```
-
-`requirements.txt` (included):
-```txt
-langgraph
-langchain
-langchain_google_genai
-pandas
-matplotlib
-python-dotenv
-```
-
-> Tested with Python 3.11–3.12. If you pin versions, ensure `langchain_google_genai` matches the expected `google-ai-generativelanguage` backend for your environment.
-
 ---
 
-## ▶️ Usage
+## 7. Usage
 
 ### 1) Prepare data
 - Put your CSV files under `data/`.
@@ -149,7 +121,7 @@ from analytics_agent import run_analytics
 result = run_analytics("Plot total sales by region for July 2024")
 
 print("Selected table:", result.get("table_name"))
-print("Chart path    :", result.get("image_path"))
+print("Chart path    :", result.get("image_path")) # chart stored here
 print("\nEvents:")
 for e in result.get("events", []):
     print(f"[{e['ts']}] {e['agent']}: {e['message']} (p={e['progress']})")
@@ -160,63 +132,13 @@ for e in result.get("events", []):
 
 ---
 
-## 🧪 How code execution works
 
-- The **LLM returns code** wrapped inside `<execute_python> ... </execute_python>` tags.
-- The agent extracts that snippet, injects an execution environment with `df` already loaded (`pd.read_csv(file_path, encoding="latin1")`), and runs it.
-- The snippet **must** save the image to the provided path, and **must** not call `plt.show()`.
-
-A minimal successful snippet (the LLM is guided to produce this style):
-```python
-import matplotlib.pyplot as plt
-
-# transform/aggregate df as needed...
-df_grouped = df.groupby("date", as_index=False)["sales"].sum()
-
-plt.figure()
-plt.plot(df_grouped["date"], df_grouped["sales"])
-plt.title("Sales Trend")
-plt.xlabel("Date")
-plt.ylabel("Sales")
-plt.tight_layout()
-plt.savefig(r"data/charts/chart_sales_daily.png", dpi=300)
-plt.close()
-```
-
----
-
-## 🚦 Events & visibility
-
-Each node appends an **event** with timestamp, agent name, message, and progress (0–1).  
-You can render these to show planner decisions, detected table, and where the chart was saved.
-
----
-
-## 🧰 Troubleshooting
-
-- **“DataDetection failed”**: The LLM couldn’t map your query to a key in `schema.json`.  
-  - Improve `description` fields in the catalog.  
-  - Try simpler phrasing in your query.  
-  - Ensure the key it returned actually exists.
-
-- **CSV encoding issues**: The runner uses `encoding="latin1"`. If your CSVs are UTF‑8 only, update the loader accordingly.
-
-- **Empty/incorrect plots**: Enhance `schema` details and table descriptions; the model relies on them to infer columns and aggregations.
-
-- **Charts not saved**: The finalize step checks for the file. Ensure the LLM code uses the **exact** `image_path` provided in the prompt.
-
----
-
-## 🧱 Extending the workflow
+## 8. Extending the workflow
 
 Scaffolds exist for future nodes:
 - **ask_clarifying_question**: when the query is ambiguous.
 - **reflexion_code**: auto‑improve chart aesthetics/semantics.
 - **code_fix**: catch and repair LLM‑generated code errors, then retry.
-
-To add a new node:
-1. Implement a function `(state) -> state`.
-2. `g.add_node("name", fn)` and add edges/conditional routes.
-3. Update the planner’s routing logic if needed.
+- **expose_web_search_api**: To fetch data from external source (Web) 
 
 ---
