@@ -1,0 +1,11 @@
+# Core LangChain and Gemini
+langgraph
+langchain
+langchain_google_genai
+
+# Data handling and visualization
+pandas
+matplotlib
+
+# Environment variable management
+python-dotenv
