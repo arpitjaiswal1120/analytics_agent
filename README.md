@@ -17,8 +17,8 @@ Given a user query like _“plot daily sales trend for July”_, the agent:
 
 ## 2. Architecture
 
-The workflow is implemented with **LangGraph** and a shared state `AState`:
-
+The workflow is implemented with **LangGraph** (in order to incorporate multiple workflows and ambigous staments where path may not be linear) and a shared state `AState`:
+![AgentWorkFlow](architecture.png)
 - **plan (Planner/Orchestrator)**  
   Routes to the next node: `detect` → `plot` → `finalize` based on what’s already done.
 
@@ -134,11 +134,11 @@ for e in result.get("events", []):
 
 
 ## 8. Extending the workflow
-
-Scaffolds exist for future nodes:
+Future updates
 - **ask_clarifying_question**: when the query is ambiguous.
 - **reflexion_code**: auto‑improve chart aesthetics/semantics.
 - **code_fix**: catch and repair LLM‑generated code errors, then retry.
 - **expose_web_search_api**: To fetch data from external source (Web) 
+- **adding message history**: To make it conversation chatbot, need to incorporate the message_history to all the agents in order make changes on previous results
 
 ---
